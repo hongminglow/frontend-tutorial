@@ -1,9 +1,9 @@
 import React, { Component } from "react";
-// import * as Sentry from "@sentry/react";
 import "./App.css";
 import wrenchImg from "../assets/wrench.png";
 import nailsImg from "../assets/nails.png";
 import hammerImg from "../assets/hammer.png";
+import {metrics} from '@sentry/react'
 
 const monify = (n) => (n / 100).toFixed(2);
 const getUniqueId = () => "_" + Math.random().toString(36).substring(2, 9);
@@ -137,6 +137,12 @@ class App extends Component {
     // );
   }
 
+  metricsTracking (){
+   metrics.increment("button_click", 1, {
+      tags: { browser: "Firefox", region: "EU" },
+    });
+  }
+
   render() {
     const total = this.state.cart.reduce((t, i) => t + i.price, 0);
     const cartDisplay = this.state.cart.reduce((c, { id }) => {
@@ -151,6 +157,8 @@ class App extends Component {
             <h1>Online Hardware Store</h1>
           </header>
 
+          <button onClick={() => this.metricsTracking()}>Break the world</button>
+          
           <div className="inventory">
             {this.store.map((item) => {
               const { name, id, img, price } = item;

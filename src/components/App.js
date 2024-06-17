@@ -3,7 +3,8 @@ import "./App.css";
 import wrenchImg from "../assets/wrench.png";
 import nailsImg from "../assets/nails.png";
 import hammerImg from "../assets/hammer.png";
-import {metrics} from '@sentry/react'
+import { addBreadcrumb, captureEvent, captureMessage, endSession, metrics, setUser, startSession } from '@sentry/react'
+
 
 const monify = (n) => (n / 100).toFixed(2);
 const getUniqueId = () => "_" + Math.random().toString(36).substring(2, 9);
@@ -138,10 +139,53 @@ class App extends Component {
   }
 
   //console.log("hi..")
-  metricsTracking (){
-   metrics.increment("button_click", 1, {
-      tags: { browser: "Firefox", region: "EU" },
+
+  metricsTracking() {
+    //capture the event start transaction
+    startSession();
+
+    //This function sets the user context, which helps associate errors and events with specific users.
+    setUser({
+      id: "99",
+      username: "tester123",
+      email: "john.doe@example.com",
     });
+
+    //add a message
+    captureMessage("User signed up"); // Send a custom message
+
+
+    //add a breadcrumb for log of an event
+    addBreadcrumb({
+      category: "ui.click",
+      message: "User clicked the submit button"
+    })
+
+    //add a capture event
+    captureEvent({
+      message: "Custom event",
+      extra: { additionalData: "value" }
+    });
+
+
+    metrics.increment("button_click", 3, {
+      tags: { browser: "Microsoft Edge", region: "NA" },
+    });
+
+
+    // Add '15.0' to a distribution used for tracking the loading times for component.
+    metrics.distribution("component_load_time", 15.0, {
+      tags: { type: "important" },
+      unit: "millisecond",
+    });
+
+    metrics.gauge("cpu_usage", 34, {
+      tags: { os: "MacOS" },
+      unit: "percent",
+    });
+    
+    //capture the event of end transaction
+    endSession();
   }
 
   render() {
@@ -159,7 +203,7 @@ class App extends Component {
           </header>
 
           <button onClick={() => this.metricsTracking()}>Break the world</button>
-          
+
           <div className="inventory">
             {this.store.map((item) => {
               const { name, id, img, price } = item;

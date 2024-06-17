@@ -1,6 +1,3 @@
-const {
-  sentryWebpackPlugin
-} = require("@sentry/webpack-plugin");
 
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");

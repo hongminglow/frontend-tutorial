@@ -137,6 +137,7 @@ class App extends Component {
     // );
   }
 
+  //console.log("hi..")
   metricsTracking (){
    metrics.increment("button_click", 1, {
       tags: { browser: "Firefox", region: "EU" },

@@ -3,281 +3,292 @@ import "./App.css";
 import wrenchImg from "../assets/wrench.png";
 import nailsImg from "../assets/nails.png";
 import hammerImg from "../assets/hammer.png";
-import { addBreadcrumb, captureEvent, captureMessage, endSession, metrics, setUser, startSession } from '@sentry/react'
-
+import {
+	ErrorBoundary,
+	addBreadcrumb,
+	browserTracingIntegration,
+	captureEvent,
+	captureMessage,
+	endSession,
+	metrics,
+	setMeasurement,
+	setUser,
+	startBrowserTracingNavigationSpan,
+	startSession,
+} from "@sentry/react";
 
 const monify = (n) => (n / 100).toFixed(2);
 const getUniqueId = () => "_" + Math.random().toString(36).substring(2, 9);
 
+function FallbackComponent() {
+	return <div>An error has occured</div>;
+}
 class App extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      cart: [],
-    };
+	constructor(props) {
+		super(props);
+		this.state = {
+			cart: [],
+		};
 
-    // generate random email
-    this.email = Math.random().toString(36).substring(2, 6) + "@yahoo.com";
+		// generate random email
+		this.email = Math.random().toString(36).substring(2, 6) + "@yahoo.com";
 
-    this.store = [
-      {
-        id: "wrench",
-        name: "Wrench",
-        price: 500,
-        img: wrenchImg,
-      },
-      {
-        id: "nails",
-        name: "Nails",
-        price: 25,
-        img: nailsImg,
-      },
-      {
-        id: "hammer",
-        name: "Hammer",
-        price: 1000,
-        img: hammerImg,
-      },
-    ];
-    this.buyItem = this.buyItem.bind(this);
-    this.checkout = this.checkout.bind(this);
-    this.resetCart = this.resetCart.bind(this);
-  }
+		this.store = [
+			{
+				id: "wrench",
+				name: "Wrench",
+				price: 500,
+				img: wrenchImg,
+			},
+			{
+				id: "nails",
+				name: "Nails",
+				price: 25,
+				img: nailsImg,
+			},
+			{
+				id: "hammer",
+				name: "Hammer",
+				price: 1000,
+				img: hammerImg,
+			},
+		];
+		this.buyItem = this.buyItem.bind(this);
+		this.checkout = this.checkout.bind(this);
+		this.resetCart = this.resetCart.bind(this);
+	}
 
-  componentDidMount() {
-    const defaultError = window.onerror;
-    window.onerror = (error) => {
-      this.setState({ hasError: true, success: false });
-      defaultError(error);
-    };
+	componentDidMount() {
+		const defaultError = window.onerror;
+		window.onerror = (error) => {
+			this.setState({ hasError: true, success: false });
+			defaultError(error);
+		};
 
-    // Add context to error/event
-    // View this data in "Tags"
-    // Sentry.configureScope((scope) => {
-    //   scope.setUser({ email: this.email }); // attach user/email context
-    //   scope.setTag("customerType", "medium-plan"); // custom-tag
-    // });
-  }
+		// Add context to error/event
+		// View this data in "Tags"
+		// Sentry.configureScope((scope) => {
+		//   scope.setUser({ email: this.email }); // attach user/email context
+		//   scope.setTag("customerType", "medium-plan"); // custom-tag
+		// });
+	}
 
-  buyItem(item) {
-    const cart = [].concat(this.state.cart);
-    cart.push(item);
-    console.log(item);
-    this.setState({ cart, success: false });
+	buyItem(item) {
+		const cart = [].concat(this.state.cart);
+		cart.push(item);
+		console.log(item);
+		this.setState({ cart, success: false });
 
-    // Add context to error/event
-    // View this data in "Additional Data"
-    // Sentry.configureScope((scope) => {
-    //   scope.setExtra("cart", JSON.stringify(cart));
-    // });
-    // // View this data in "Breadcrumbs"
-    // Sentry.addBreadcrumb({
-    //   category: "cart",
-    //   message: "User added " + item.name + " to cart",
-    //   level: "info",
-    // });
-  }
+		// Add context to error/event
+		// View this data in "Additional Data"
+		// Sentry.configureScope((scope) => {
+		//   scope.setExtra("cart", JSON.stringify(cart));
+		// });
+		// // View this data in "Breadcrumbs"
+		// Sentry.addBreadcrumb({
+		//   category: "cart",
+		//   message: "User added " + item.name + " to cart",
+		//   level: "info",
+		// });
+	}
 
-  resetCart(event) {
-    event.preventDefault();
-    this.setState({ cart: [], hasError: false, success: false });
+	resetCart(event) {
+		event.preventDefault();
+		this.setState({ cart: [], hasError: false, success: false });
 
-    // Reset context for error/event
-    // Sentry.configureScope((scope) => {
-    //   scope.setExtra("cart", "");
-    // });
-    // Sentry.addBreadcrumb({
-    //   category: "cart",
-    //   message: "User emptied cart",
-    //   level: "info",
-    // });
-  }
+		// Reset context for error/event
+		// Sentry.configureScope((scope) => {
+		//   scope.setExtra("cart", "");
+		// });
+		// Sentry.addBreadcrumb({
+		//   category: "cart",
+		//   message: "User emptied cart",
+		//   level: "info",
+		// });
+	}
 
-  checkout() {
-    // Generate an error
-    this.myCodeIsMorePerfect();
+	checkout() {
+		// Generate an error
+		// this.myCodeIsMorePerfect();
 
-    const order = {
-      email: this.email,
-      cart: this.state.cart,
-    };
+		const order = {
+			email: this.email,
+			cart: this.state.cart,
+		};
 
-    // generate unique transactionId and set as Sentry tag
-    const transactionId = getUniqueId();
-    // Sentry.configureScope((scope) => {
-    //   scope.setTag("transaction_id", transactionId);
-    // });
+		// generate unique transactionId and set as Sentry tag
+		const transactionId = getUniqueId();
+		// Sentry.configureScope((scope) => {
+		//   scope.setTag("transaction_id", transactionId);
+		// });
 
-    // Set transctionID as header
-    const fetchData = {
-      method: "POST",
-      body: JSON.stringify(order),
-      headers: new Headers({ "X-Transaction-ID": transactionId }),
-    };
+		// Set transctionID as header
+		const fetchData = {
+			method: "POST",
+			body: JSON.stringify(order),
+			headers: new Headers({ "X-Transaction-ID": transactionId }),
+		};
 
-    /*
+		/*
       POST request to /checkout endpoint.
         - Custom header with transactionId for transaction tracing
         - throw error if response !== 200
     */
-    // fetch("http://localhost:8000/checkout", fetchData).then(
-    //   (error, response) => {
-    //     if (error) {
-    //       throw error;
-    //     }
-    //     if (response.statusCode === 200) {
-    //       this.setState({ success: true });
-    //     } else {
-    //       throw new Error(
-    //         response.statusCode +
-    //           " - " +
-    //           (response.statusMessage || response.body)
-    //       );
-    //     }
-    //   }
-    // );
-  }
+		console.log("fetch data submitted.." + JSON.stringify(fetchData, null, 2));
+		fetch("http://localhost:8000/checkout", fetchData).then((error, response) => {
+			if (error) {
+				throw error;
+			}
+			if (response.statusCode === 200) {
+				this.setState({ success: true });
+			} else {
+				throw new Error(response.statusCode + " - " + (response.statusMessage || response.body));
+			}
+		});
+	}
 
-  //console.log("hi..")
+	//console.log("hi..")
 
-  metricsTracking() {
-    //capture the event start transaction
-    startSession();
+	metricsTracking() {
+		//This function sets the user context, which helps associate errors and events with specific users.
+		setUser({
+			id: "99",
+			username: "tester123",
+			email: "john.doe@example.com",
+		});
 
-    //This function sets the user context, which helps associate errors and events with specific users.
-    setUser({
-      id: "99",
-      username: "tester123",
-      email: "john.doe@example.com",
-    });
+		//add a message
+		captureMessage("User signed up"); // Send a custom message
 
-    //add a message
-    captureMessage("User signed up"); // Send a custom message
+		//add a breadcrumb for log of an event
+		addBreadcrumb({
+			category: "ui.click",
+			message: "User clicked the submit button",
+		});
 
+		//add a capture event
+		captureEvent({
+			message: "Custom event",
+			extra: { additionalData: "value" },
+		});
 
-    //add a breadcrumb for log of an event
-    addBreadcrumb({
-      category: "ui.click",
-      message: "User clicked the submit button"
-    })
+		metrics.increment("button_click", 3, {
+			tags: { browser: "Microsoft Edge", region: "NA" },
+		});
 
-    //add a capture event
-    captureEvent({
-      message: "Custom event",
-      extra: { additionalData: "value" }
-    });
+		// Add '15.0' to a distribution used for tracking the loading times for component.
+		metrics.distribution("component_load_time", 15.0, {
+			tags: { type: "important" },
+			unit: "millisecond",
+		});
 
+		metrics.gauge("cpu_usage", 34, {
+			tags: { os: "MacOS" },
+			unit: "percent",
+		});
+	}
 
-    metrics.increment("button_click", 3, {
-      tags: { browser: "Microsoft Edge", region: "NA" },
-    });
+	functionTester() {
+		console.log("metrics clicked..");
 
+		// metrics.increment("button_click", 6, {
+		// 	tags: { browser: "Chrome", app_version: "1.0.1" },
+		// });
 
-    // Add '15.0' to a distribution used for tracking the loading times for component.
-    metrics.distribution("component_load_time", 15.0, {
-      tags: { type: "important" },
-      unit: "millisecond",
-    });
+		// metrics.distribution("component_load_timer", 15.0, {
+		// 	tags: { type: "important" },
+		// 	unit: "millisecond",
+		// });
 
-    metrics.gauge("cpu_usage", 34, {
-      tags: { os: "MacOS" },
-      unit: "percent",
-    });
-    
-    //capture the event of end transaction
-    endSession();
-  }
+		// metrics.gauge("cpu_usage", 34, {
+		// 	tags: { os: "MacOS" },
+		// 	unit: "percent",
+		// });
+	}
 
-  render() {
-    const total = this.state.cart.reduce((t, i) => t + i.price, 0);
-    const cartDisplay = this.state.cart.reduce((c, { id }) => {
-      c[id] = c[id] ? c[id] + 1 : 1;
-      return c;
-    }, {});
+	render() {
+		const total = this.state.cart.reduce((t, i) => t + i.price, 0);
+		const cartDisplay = this.state.cart.reduce((c, { id }) => {
+			c[id] = c[id] ? c[id] + 1 : 1;
+			return c;
+		}, {});
 
-    return (
-      <div className="App">
-        <main>
-          <header>
-            <h1>Online Hardware Store</h1>
-          </header>
+		return (
+			<ErrorBoundary showDialog fallback={FallbackComponent}>
+				<div className="App">
+					<main>
+						<header>
+							<h1>Online Hardware Store</h1>
+						</header>
 
-          <button onClick={() => this.metricsTracking()}>Break the world</button>
+						<button onClick={() => this.functionTester()}>Break the world</button>
 
-          <div className="inventory">
-            {this.store.map((item) => {
-              const { name, id, img, price } = item;
-              return (
-                <div className="item" key={id}>
-                  <div className="thumbnail">
-                    <img src={img} alt="" />
-                  </div>
-                  <p>{name}</p>
-                  <div className="button-wrapper">
-                    <strong>${monify(price)}</strong>
-                    <button onClick={() => this.buyItem(item)}>Buy!</button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </main>
-        <div className="sidebar">
-          <header>
-            <h4>Hi, {this.email}!</h4>
-          </header>
-          <div className="cart">
-            {this.state.cart.length ? (
-              <div>
-                {Object.keys(cartDisplay).map((id) => {
-                  const { name, price } = this.store.find((i) => i.id === id);
-                  const qty = cartDisplay[id];
-                  return (
-                    <div className="cart-item" key={id}>
-                      <div className="cart-item-name">
-                        {name} x{qty}
-                      </div>
-                      <div className="cart-item-price">
-                        ${monify(price * qty)}
-                      </div>
-                    </div>
-                  );
-                })}
-                <hr />
-                <div className="cart-item">
-                  <div className="cart-item-name">
-                    <strong>Total</strong>
-                  </div>
-                  <div className="cart-item-price">
-                    <strong>${monify(total)}</strong>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              "Your cart is empty"
-            )}
-          </div>
-          {this.state.hasError && (
-            <p className="cart-error">Something went wrong</p>
-          )}
-          {this.state.success && (
-            <p className="cart-success">Thank you for your purchase!</p>
-          )}
-          <button
-            onClick={this.checkout}
-            disabled={this.state.cart.length === 0}
-          >
-            Checkout
-          </button>{" "}
-          {this.state.cart.length > 0 && (
-            <button onClick={this.resetCart} className="cart-reset">
-              Empty cart
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
+						<div className="inventory">
+							{this.store.map((item) => {
+								const { name, id, img, price } = item;
+								return (
+									<div className="item" key={id}>
+										<div className="thumbnail">
+											<img src={img} alt="" />
+										</div>
+										<p>{name}</p>
+										<div className="button-wrapper">
+											<strong>${monify(price)}</strong>
+											<button onClick={() => this.buyItem(item)}>Buy!</button>
+										</div>
+									</div>
+								);
+							})}
+						</div>
+					</main>
+					<div className="sidebar">
+						<header>
+							<h4>Hi, {this.email}!</h4>
+						</header>
+						<div className="cart">
+							{this.state.cart.length ? (
+								<div>
+									{Object.keys(cartDisplay).map((id) => {
+										const { name, price } = this.store.find((i) => i.id === id);
+										const qty = cartDisplay[id];
+										return (
+											<div className="cart-item" key={id}>
+												<div className="cart-item-name">
+													{name} x{qty}
+												</div>
+												<div className="cart-item-price">${monify(price * qty)}</div>
+											</div>
+										);
+									})}
+									<hr />
+									<div className="cart-item">
+										<div className="cart-item-name">
+											<strong>Total</strong>
+										</div>
+										<div className="cart-item-price">
+											<strong>${monify(total)}</strong>
+										</div>
+									</div>
+								</div>
+							) : (
+								"Your cart is empty"
+							)}
+						</div>
+						{this.state.hasError && <p className="cart-error">Something went wrong</p>}
+						{this.state.success && <p className="cart-success">Thank you for your purchase!</p>}
+						<button onClick={this.checkout} disabled={this.state.cart.length === 0}>
+							Checkout
+						</button>{" "}
+						{this.state.cart.length > 0 && (
+							<button onClick={this.resetCart} className="cart-reset">
+								Empty cart
+							</button>
+						)}
+					</div>
+				</div>
+			</ErrorBoundary>
+		);
+	}
 }
 
 export default App;
